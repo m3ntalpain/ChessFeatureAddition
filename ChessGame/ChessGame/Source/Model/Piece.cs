@@ -6,8 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ChessGame.Source.Model {
-
-     abstract class Piece {
+    public abstract class Piece {
 
         /// <summary>
         /// The Board on which the Piece exists.

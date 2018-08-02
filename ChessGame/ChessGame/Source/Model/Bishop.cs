@@ -5,8 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace ChessGame.Source.Model {
-
-    class Bishop : Piece {
+    public class Bishop : Piece {
 
         public Bishop(Board board, int color) : base(board, color) {
 

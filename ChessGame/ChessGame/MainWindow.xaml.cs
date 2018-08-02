@@ -54,7 +54,11 @@ namespace ChessGame {
 
             InitializeComponent();
 
-            this.boardModel = new Board();
+
+            //Set game mode
+            MessageBoxResult response = MessageBox.Show("Would you like to play Chess960?", "Chess Game Type", MessageBoxButton.YesNo);
+            bool standardBoard = response != MessageBoxResult.Yes;
+            this.boardModel = new Board(standardBoard);
             Debug.WriteLine(this.boardModel.ToString()); //REMOVE WHEN DONE
 
             this.mode = 0;//default start by chosing a piece

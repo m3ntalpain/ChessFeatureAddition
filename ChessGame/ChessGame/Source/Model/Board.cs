@@ -1,17 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Resources;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace ChessGame.Source.Model {
 
-    class Board {
+    public class Board {
 
         /// <summary>
         /// Variable showing size of game. Constant.
         /// </summary>
         public const int GameSize = 8;
+        /// <summary>
+        /// Toggle between Chess960 and Standard board setup
+        /// </summary>
+        public bool StandardBoard { get; set; }
 
         /// <summary>
         /// Jagged array of BoardSpace representing the game board.
@@ -39,8 +45,10 @@ namespace ChessGame.Source.Model {
         /// <summary>
         /// Board contructor.
         /// </summary>
-        public Board() {
-
+        /// <param name="standardBoard">True for standard, false for 960</param>
+        public Board(bool standardBoard = true)
+        {
+            StandardBoard = standardBoard;
             this.Reset();
 
         }
@@ -48,7 +56,8 @@ namespace ChessGame.Source.Model {
         /// <summary>
         /// Resets board to initial state.
         /// </summary>
-        public void Reset() {
+        public void Reset()
+        { 
             //initializing the dictionaries (deadpieces)
             this.deadBlacks = new LinkedList<Piece>();
             this.deadWhites = new LinkedList<Piece>();
@@ -68,31 +77,38 @@ namespace ChessGame.Source.Model {
                 }
             }
 
-            //initializing the rooks
-            this.board[0][0].Piece = new Rook(this, 0); //BoardSpace occupied variable is automatically set to true here.
-            this.board[7][0].Piece = new Rook(this, 0);
-            this.board[0][7].Piece = new Rook(this, 1);
-            this.board[7][7].Piece = new Rook(this, 1);
+            if (StandardBoard)
+            {
+                //initializing the rooks
+                this.board[0][0].Piece = new Rook(this, 0); //BoardSpace occupied variable is automatically set to true here.
+                this.board[7][0].Piece = new Rook(this, 0);
+                this.board[0][7].Piece = new Rook(this, 1);
+                this.board[7][7].Piece = new Rook(this, 1);
 
-            //initializing the knights
-            this.board[1][0].Piece = new Knight(this, 0);
-            this.board[6][0].Piece = new Knight(this, 0);
-            this.board[1][7].Piece = new Knight(this, 1);
-            this.board[6][7].Piece = new Knight(this, 1);
+                //initializing the knights
+                this.board[1][0].Piece = new Knight(this, 0);
+                this.board[6][0].Piece = new Knight(this, 0);
+                this.board[1][7].Piece = new Knight(this, 1);
+                this.board[6][7].Piece = new Knight(this, 1);
 
-            //initializing the bishops
-            this.board[2][0].Piece = new Bishop(this, 0);
-            this.board[5][0].Piece = new Bishop(this, 0);
-            this.board[2][7].Piece = new Bishop(this, 1);
-            this.board[5][7].Piece = new Bishop(this, 1);
+                //initializing the bishops
+                this.board[2][0].Piece = new Bishop(this, 0);
+                this.board[5][0].Piece = new Bishop(this, 0);
+                this.board[2][7].Piece = new Bishop(this, 1);
+                this.board[5][7].Piece = new Bishop(this, 1);
 
-            //initializing the queens
-            this.board[3][0].Piece = new Queen(this, 0);
-            this.board[3][7].Piece = new Queen(this, 1);
+                //initializing the queens
+                this.board[3][0].Piece = new Queen(this, 0);
+                this.board[3][7].Piece = new Queen(this, 1);
 
-            //initializing the kings
-            this.board[4][0].Piece = new King(this, 0);
-            this.board[4][7].Piece = new King(this, 1);
+                //initializing the kings
+                this.board[4][0].Piece = new King(this, 0);
+                this.board[4][7].Piece = new King(this, 1);
+            }
+            else
+            {
+                while (!SetChess960Board()) {}
+            }
 
             //initializing the pawns
             for (int i = 0; i < Board.GameSize; i++) {
@@ -102,6 +118,82 @@ namespace ChessGame.Source.Model {
             for (int i = 0; i < Board.GameSize; i++) {
                 this.board[i][6].Piece = new Pawn(this, 1);
             }
+        }
+
+        private bool SetChess960Board()
+        {
+            Random random = new Random();
+            List<int> emptyLocations = new List<int> { 0, 1, 2, 3, 4, 5, 6, 7 };
+            List<Piece> piecesToPlace = new List<Piece>
+            {
+                new King(this, 0),
+                new Queen(this, 0),
+                new Bishop(this, 0),
+                new Bishop(this, 0),
+                new Rook(this, 0),
+                new Rook(this, 0),
+                new Knight(this, 0),
+                new Knight(this, 0)
+            };
+            while (piecesToPlace.Count > 0)
+            {
+                int currentLocation = emptyLocations[random.Next(emptyLocations.Count)];
+                Piece currentPiece = piecesToPlace[random.Next(piecesToPlace.Count)];
+                board[currentLocation][0].Piece = currentPiece;
+                piecesToPlace.Remove(currentPiece);
+                emptyLocations.Remove(currentLocation);
+            }
+
+            BoardSpace[] row = GetRow(0);
+            List<BoardSpace> rowList = row.ToList();
+            int kingPos = rowList.IndexOf(rowList.First(p => p.Piece is King));
+            int rookOne = rowList.IndexOf(rowList.First(p => p.Piece is Rook));
+            int rookTwo = rowList.IndexOf(rowList.Last(p => p.Piece is Rook));
+            int bishopOne = rowList.IndexOf(rowList.First(p => p.Piece is Bishop));
+            int bishopTwo = rowList.IndexOf(rowList.Last(p => p.Piece is Bishop));
+            if (kingPos < rookOne || kingPos > rookTwo || bishopOne % 2 == 0 && bishopTwo % 2 == 0 || bishopOne % 2 == 1 && bishopTwo % 2 == 1)
+            {
+                return false;
+            }
+
+            BoardSpace[] row1 = GetRow(7);
+            for (var i = 0; i < row.Length; i++)
+            {
+                Piece newPiece;
+                switch (row[i].Piece)
+                {
+                    case King _:
+                        newPiece = new King(this, 1);
+                        break;
+                    case Rook _:
+                        newPiece = new Rook(this, 1);
+                        break;
+                    case Bishop _:
+                        newPiece = new Bishop(this, 1);
+                        break;
+                    case Queen _:
+                        newPiece = new Queen(this, 1);
+                        break;
+                    case Knight _:
+                        newPiece = new Knight(this, 1);
+                        break;
+                    default:
+                        return false;
+                }
+
+                row1[i].Piece = newPiece;
+            }
+            return true;
+        }
+
+        public BoardSpace[] GetRow(int rowX)
+        {
+            BoardSpace[] row = new BoardSpace[8];
+            for (var i = 0; i < row.Length; i++)
+            {
+                row[i] = GetBoardSpace(i, rowX);
+            }
+            return row;
         }
 
         public BoardSpace GetBoardSpace(int posX, int posY) {
